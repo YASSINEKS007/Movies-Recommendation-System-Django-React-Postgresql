@@ -5,6 +5,7 @@ import Logout from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import PlaylistPlay from "@mui/icons-material/PlaylistPlay";
 import Settings from "@mui/icons-material/Settings";
+import { useTheme } from "@mui/material/styles";
 
 import Search from "@mui/icons-material/Search";
 import {
@@ -14,7 +15,6 @@ import {
   ListItemIcon,
   Tooltip,
   useMediaQuery,
-  useTheme,
 } from "@mui/material";
 import Avatar from "@mui/material/Avatar";
 import Menu from "@mui/material/Menu";
@@ -22,6 +22,7 @@ import MenuItem from "@mui/material/MenuItem";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 import { setLogout, setMode } from "../state";
 
 function NavBar() {
@@ -31,6 +32,7 @@ function NavBar() {
   const alt = theme.palette.background.alt;
   const [anchorEl, setAnchorEl] = useState(null);
   const [anchorElIcon, setAnchorElIcon] = useState(null);
+  const backendHost = import.meta.env.VITE_BACKEND_HOST;
 
   const open = Boolean(anchorEl);
   const openIcon = Boolean(anchorElIcon);
@@ -39,6 +41,8 @@ function NavBar() {
   const dispatch = useDispatch();
 
   const mode = useSelector((state) => state.mode);
+  const user = useSelector((state) => state.user);
+  const username = user.username;
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -59,6 +63,28 @@ function NavBar() {
   const handleModeToggle = () => {
     dispatch(setMode());
     setAnchorElIcon(null);
+  };
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+
+  const handleChange = async (event) => {
+    const newSearchTerm = event.target.value;
+    setSearchTerm(newSearchTerm);
+
+    const searchUrl = `${backendHost}/app/search/?s=${encodeURIComponent(
+      newSearchTerm
+    )}`;
+
+    try {
+      const response = await api.get(searchUrl);
+      console.log("Search term:", response.data["search_term"]);
+      setSuggestions(response.data["search_term"]);
+    } catch (error) {
+      console.error("Search request error:", error);
+    }
   };
 
   return isNotMobileScreen ? (
@@ -94,26 +120,19 @@ function NavBar() {
           >
             Genre
           </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setAnchorEl(null);
-              dispatch(setLogout());
-              navigate("/login");
-            }}
-          >
-            Logout
-          </MenuItem>
         </Menu>
       </div>
 
       {/* Middle - Search Bar */}
       <div
-        className="flex items-center rounded-4"
+        className="flex items-center rounded-full"
         style={{ backgroundColor: `${neutralLight}`, width: "400px" }}
       >
         <InputBase
           placeholder="Search a movie..."
-          className="p-1"
+          className="p-1 px-4"
+          value={searchTerm}
+          onChange={handleChange}
         />
         <div className="flex-grow"></div>{" "}
         {/* This will push the IconButton to the end */}
@@ -133,7 +152,9 @@ function NavBar() {
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
           >
-            <Avatar sx={{ width: 32, height: 32 }}>M</Avatar>
+            <Avatar sx={{ width: 32, height: 32 }}>
+              {username[0].toUpperCase()}
+            </Avatar>
           </IconButton>
         </Tooltip>
         <Menu
@@ -212,6 +233,7 @@ function NavBar() {
             onClick={() => {
               handleClose();
               dispatch(setLogout());
+              navigate("/");
             }}
           >
             <ListItemIcon>
@@ -254,6 +276,22 @@ function NavBar() {
           Genre
         </MenuItem>
       </Menu>
+      <div
+        className="flex items-center rounded-full ml-6"
+        style={{ backgroundColor: `${neutralLight}`, width: "400px" }}
+      >
+        <InputBase
+          placeholder="Search a movie..."
+          className="p-1 px-4"
+          value={searchTerm}
+          onChange={handleChange}
+        />
+        <div className="flex-grow"></div>{" "}
+        {/* This will push the IconButton to the end */}
+        <IconButton>
+          <Search />
+        </IconButton>
+      </div>
       <span className="flex-auto"></span>
 
       <Tooltip title="Account settings">
@@ -265,7 +303,9 @@ function NavBar() {
           aria-haspopup="true"
           aria-expanded={open ? "true" : undefined}
         >
-          <Avatar sx={{ width: 32, height: 32 }}>M</Avatar>
+          <Avatar sx={{ width: 32, height: 32 }}>
+            {username[0].toUpperCase()}
+          </Avatar>
         </IconButton>
       </Tooltip>
       <Menu
@@ -346,6 +386,7 @@ function NavBar() {
           onClick={() => {
             handleClose();
             dispatch(setLogout());
+            navigate("/login");
           }}
         >
           <ListItemIcon>

@@ -8,11 +8,13 @@ import LoginPage from "./pages/LoginPage";
 import { themeSettings } from "./themes/main";
 import RegisterPage from "./pages/RegisterPage";
 import NotAuthorized from "./pages/NotAuthorized";
+import "./interceptor.js";
 
 function App() {
   const mode = useSelector((state) => state.mode);
   const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
-  const isAuthenticated = useSelector((state) => state.token != null);
+  const isAuthenticated = useSelector((state) => state.accessToken != null);
+  console.log("is Authenticated " ,  isAuthenticated)
 
   return (
     <ThemeProvider theme={theme}>
@@ -20,17 +22,19 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route
-            path="/home"
-            element={isAuthenticated ? <HomePage /> : <NotAuthorized/>}
+            path="/"
+            element={<LoginPage />}
           />
+
           <Route
             path="/register"
             element={<RegisterPage />}
           />
           <Route
-            path="/login"
-            element={<LoginPage />}
+            path="/home"
+            element={isAuthenticated ? <HomePage /> : <NotAuthorized />}
           />
+
           <Route
             path="*"
             element={<LoginPage />}

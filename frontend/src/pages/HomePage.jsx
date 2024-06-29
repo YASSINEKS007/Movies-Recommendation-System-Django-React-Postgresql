@@ -1,11 +1,17 @@
-import NavBar from '../components/NavBar'
+import MovieCard from "../components/MovieCard";
+import NavBar from "../components/NavBar";
 
 function HomePage() {
   return (
     <div>
-      <NavBar/>
+      <NavBar />
+      <div className="flex">
+        <MovieCard />
+        <MovieCard />
+        <MovieCard />
+      </div>
     </div>
-  )
+  );
 }
 
-export default HomePage
+export default HomePage;
