@@ -1,15 +1,24 @@
 import json
-
-import bcrypt
-from bson import json_util
+import pandas as pd
 from django.contrib.auth import authenticate
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Movies, CustomUser
+import numpy as np
+from django.core.serializers.json import DjangoJSONEncoder
+
+
+from recommendation_system import (
+    create_ratings_matrix,
+    fill_ratings_matrix,
+    merge_data,
+    recreate_ratings_matrix,
+    retrieve_user_ratings,
+    svd_matrix_decomposition,
+)
+from .models import CustomUser, Movies, Ratings
 from .serializes import MoviesSerializer
 
 
@@ -130,7 +139,40 @@ def login(request):
 @permission_classes([IsAuthenticated])
 def search(request):
     s = request.GET.get("s")
-    results = Movies.objects.filter(title__istartswith=s)  
-    serializer = MoviesSerializer(results, many=True)  
-    print("Search term:", s)
+    results = Movies.objects.filter(title__istartswith=s)
+    serializer = MoviesSerializer(results, many=True)
     return Response({"search_term": serializer.data}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def fetch_movies(request):
+    movies = Movies.objects.all()
+    serializer = MoviesSerializer(movies, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+movies = Movies.objects.all().values()
+movies_df = pd.DataFrame.from_records(movies)
+ratings = Ratings.objects.all().values("userid", "movieid", "rating", "timestamp")
+ratings_df = pd.DataFrame.from_records(ratings)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_recommendations(request):
+    merged_data = merge_data(ratings_df, movies_df, "movieid")
+    ratings_matrix = create_ratings_matrix(merged_data, "userid", "movieid", "rating")
+    ratings_matrix_filled = fill_ratings_matrix(ratings_matrix)
+    U, sigma, Vt = svd_matrix_decomposition(ratings_matrix_filled)
+    res = recreate_ratings_matrix(ratings_matrix, U, sigma, Vt)
+    sparse_data = retrieve_user_ratings(1, ratings_matrix)
+    recommendations = retrieve_user_ratings(1, res)
+    print(recommendations)
+    combined_list = []
+
+    for key in sparse_data:
+        if not np.isnan(sparse_data[key]):
+            combined_list.append(key)
+
+    return Response(combined_list, status=status.HTTP_200_OK)

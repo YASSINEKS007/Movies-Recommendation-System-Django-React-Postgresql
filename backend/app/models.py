@@ -16,7 +16,10 @@ class Movies(models.Model):
 
 
 
+from django.db import models
+
 class Ratings(models.Model):
+    id = models.AutoField(primary_key=True)
     userid = models.IntegerField()
     movieid = models.IntegerField()
     rating = models.FloatField()
@@ -28,6 +31,7 @@ class Ratings(models.Model):
 
     def __str__(self):
         return str(self.rating)
+
     
 
 class CustomUserManager(BaseUserManager):

@@ -56,7 +56,7 @@ function RegisterPage() {
         password: data["password"],
         email: data["email"],
       });
-      console.log(response);
+      console.log(response); //use toast later
       navigate("/login");
     } catch (error) {
       console.log(error);

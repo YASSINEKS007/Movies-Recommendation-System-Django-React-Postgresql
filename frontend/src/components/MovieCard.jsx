@@ -9,10 +9,33 @@ import CardMedia from "@mui/material/CardMedia";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import Rating from "@mui/material/Rating";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import PropTypes from 'prop-types';
 
-function MovieCard() {
-  const [value, setValue] = useState(4.5);
+
+function MovieCard({ title, genres }) {
+  const apiURL = import.meta.env.VITE_API_URL;
+  const [poster, setPoster] = useState(null);
+  const [value, setValue] = useState(Math.floor(Math.random() * 6)); 
+
+  useEffect(() => {
+    const fetchPoster = async () => {
+      try {
+        const response = await fetch(`${apiURL}&s=${title.slice(0,-7)}`);
+        const data = await response.json();
+
+        if (data.Search && data.Search.length > 0) {
+          setPoster(data.Search[0].Poster);
+        } else {
+          console.log("No poster found for", title);
+        }
+      } catch (error) {
+        console.error("Error fetching poster:", error);
+      }
+    };
+
+    fetchPoster();
+  }, [apiURL, title]);
 
   return (
     <Card sx={{ maxWidth: 345, m: 2, boxShadow: 3, borderRadius: 2 }}>
@@ -22,31 +45,22 @@ function MovieCard() {
             <MoreVertIcon />
           </IconButton>
         }
-        title="Shrimp and Chorizo Paella"
-        subheader="Average Rating 4"
+        title={title}
         titleTypographyProps={{ variant: "h6", color: "text.primary" }}
         subheaderTypographyProps={{ variant: "body2", color: "text.secondary" }}
       />
       <CardMedia
         component="img"
-        height="200"
-        image="https://images.bauerhosting.com/empire/2024/03/the-batman.jpg?ar=16%3A9&fit=crop&crop=top&auto=format&w=1440&q=80"
-        alt="Paella dish"
+        height="150"
+        image={poster} 
+        alt={title}
       />
       <CardContent sx={{ padding: 2 }}>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-        >
-          This impressive paella is a perfect party dish and a fun meal to cook
-          together with your guests. Add 1 cup of frozen peas along with the
-          mussels, if you like.
+        <Typography variant="body1" color="text.primary">
+          {genres}
         </Typography>
       </CardContent>
-      <CardActions
-        disableSpacing
-        sx={{ padding: 1 }}
-      >
+      <CardActions disableSpacing sx={{ padding: 1 }}>
         <IconButton aria-label="add to favorites">
           <FavoriteIcon />
         </IconButton>
@@ -63,10 +77,14 @@ function MovieCard() {
           }}
           size="small"
         />
-        
       </CardActions>
     </Card>
   );
 }
+
+MovieCard.propTypes = {
+  title: PropTypes.string.isRequired, // title is a required string prop
+  genres: PropTypes.string, // description is an optional string prop
+};
 
 export default MovieCard;

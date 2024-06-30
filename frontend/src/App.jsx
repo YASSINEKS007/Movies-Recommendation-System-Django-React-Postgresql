@@ -14,7 +14,6 @@ function App() {
   const mode = useSelector((state) => state.mode);
   const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
   const isAuthenticated = useSelector((state) => state.accessToken != null);
-  console.log("is Authenticated " ,  isAuthenticated)
 
   return (
     <ThemeProvider theme={theme}>

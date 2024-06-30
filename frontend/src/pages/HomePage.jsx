@@ -1,4 +1,4 @@
-import MovieCard from "../components/MovieCard";
+import MoviesGrid from "../components/MoviesGrid";
 import NavBar from "../components/NavBar";
 
 function HomePage() {
@@ -6,9 +6,7 @@ function HomePage() {
     <div>
       <NavBar />
       <div className="flex">
-        <MovieCard />
-        <MovieCard />
-        <MovieCard />
+        <MoviesGrid/>
       </div>
     </div>
   );

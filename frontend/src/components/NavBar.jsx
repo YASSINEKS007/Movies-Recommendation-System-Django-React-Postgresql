@@ -9,17 +9,20 @@ import { useTheme } from "@mui/material/styles";
 
 import Search from "@mui/icons-material/Search";
 import {
+  Box,
   Divider,
   IconButton,
   InputBase,
   ListItemIcon,
+  Paper,
   Tooltip,
+  Typography,
   useMediaQuery,
 } from "@mui/material";
 import Avatar from "@mui/material/Avatar";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
@@ -65,14 +68,22 @@ function NavBar() {
     setAnchorElIcon(null);
   };
 
+  const clearToken = () => {
+    localStorage.setItem("access_token", "");
+    localStorage.setItem("refresh_token", "");
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
 
   const handleChange = async (event) => {
     const newSearchTerm = event.target.value;
     setSearchTerm(newSearchTerm);
+
+    if (newSearchTerm.trim() === "") {
+      setSuggestions([]);
+      return;
+    }
 
     const searchUrl = `${backendHost}/app/search/?s=${encodeURIComponent(
       newSearchTerm
@@ -80,8 +91,14 @@ function NavBar() {
 
     try {
       const response = await api.get(searchUrl);
-      console.log("Search term:", response.data["search_term"]);
-      setSuggestions(response.data["search_term"]);
+      const data = response.data.search_term;
+      if (Array.isArray(data)) {
+        const titles = data.map((movie) => movie.title);
+
+        setSuggestions(titles.slice(0, 5));
+      } else {
+        console.error("Unexpected data structure:", data);
+      }
     } catch (error) {
       console.error("Search request error:", error);
     }
@@ -124,22 +141,47 @@ function NavBar() {
       </div>
 
       {/* Middle - Search Bar */}
-      <div
-        className="flex items-center rounded-full"
-        style={{ backgroundColor: `${neutralLight}`, width: "400px" }}
-      >
-        <InputBase
-          placeholder="Search a movie..."
-          className="p-1 px-4"
-          value={searchTerm}
-          onChange={handleChange}
-        />
-        <div className="flex-grow"></div>{" "}
-        {/* This will push the IconButton to the end */}
-        <IconButton>
-          <Search />
-        </IconButton>
-      </div>
+      <Box position="relative">
+        <div
+          className="flex items-center rounded-full"
+          style={{ backgroundColor: `${neutralLight}`, width: "400px" }}
+        >
+          <InputBase
+            placeholder="Search a movie..."
+            className="p-1 px-4"
+            value={searchTerm}
+            onChange={handleChange}
+          />
+          <div className="flex-grow"></div>
+          <IconButton>
+            <Search />
+          </IconButton>
+        </div>
+        {suggestions.length > 0 && (
+          <Paper
+            elevation={3}
+            style={{ zIndex: "20" }}
+            sx={{
+              position: "absolute",
+              top: "100%",
+              right: 0,
+              width: "400px",
+              mt: 1,
+              p: 2,
+              backgroundColor: neutralLight,
+            }}
+          >
+            <Box>
+              {suggestions.map((suggestion, id) => (
+                <Fragment key={id}>
+                  <Typography>{suggestion}</Typography>
+                  {id < suggestions.length - 1 && <Divider />}
+                </Fragment>
+              ))}
+            </Box>
+          </Paper>
+        )}
+      </Box>
 
       {/* End - Account Settings */}
       <div className="flex items-center">
@@ -233,6 +275,7 @@ function NavBar() {
             onClick={() => {
               handleClose();
               dispatch(setLogout());
+              clearToken();
               navigate("/");
             }}
           >
@@ -276,22 +319,48 @@ function NavBar() {
           Genre
         </MenuItem>
       </Menu>
-      <div
-        className="flex items-center rounded-full ml-6"
-        style={{ backgroundColor: `${neutralLight}`, width: "400px" }}
-      >
-        <InputBase
-          placeholder="Search a movie..."
-          className="p-1 px-4"
-          value={searchTerm}
-          onChange={handleChange}
-        />
-        <div className="flex-grow"></div>{" "}
-        {/* This will push the IconButton to the end */}
-        <IconButton>
-          <Search />
-        </IconButton>
-      </div>
+      <Box position="relative">
+        <div
+          className="flex items-center rounded-full"
+          style={{ backgroundColor: `${neutralLight}`, width: "400px" }}
+        >
+          <InputBase
+            placeholder="Search a movie..."
+            className="p-1 px-4"
+            value={searchTerm}
+            onChange={handleChange}
+          />
+          <div className="flex-grow"></div>{" "}
+          {/* This will push the IconButton to the end */}
+          <IconButton>
+            <Search />
+          </IconButton>
+        </div>
+        {suggestions.length > 0 && (
+          <Paper
+            elevation={3}
+            style={{ zIndex: "20" }}
+            sx={{
+              position: "absolute",
+              top: "100%",
+              right: 0,
+              width: "400px",
+              mt: 1,
+              p: 2,
+              backgroundColor: neutralLight,
+            }}
+          >
+            <Box>
+              {suggestions.map((suggestion, id) => (
+                <Fragment key={id}>
+                  <Typography>{suggestion}</Typography>
+                  {id < suggestions.length - 1 && <Divider />}
+                </Fragment>
+              ))}
+            </Box>
+          </Paper>
+        )}
+      </Box>
       <span className="flex-auto"></span>
 
       <Tooltip title="Account settings">
@@ -386,6 +455,7 @@ function NavBar() {
           onClick={() => {
             handleClose();
             dispatch(setLogout());
+            clearToken();
             navigate("/login");
           }}
         >
