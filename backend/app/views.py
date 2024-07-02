@@ -1,23 +1,24 @@
 import json
+
+import numpy as np
 import pandas as pd
 from django.contrib.auth import authenticate
+from recommendation_system import (
+    create_ratings_matrix,
+    fill_ratings_matrix,
+    get_item_details,
+    merge_data,
+    recreate_ratings_matrix,
+    retrieve_user_ratings,
+    svd_matrix_decomposition,
+    get_average_rating,
+)
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-import numpy as np
-from django.core.serializers.json import DjangoJSONEncoder
 
-
-from recommendation_system import (
-    create_ratings_matrix,
-    fill_ratings_matrix,
-    merge_data,
-    recreate_ratings_matrix,
-    retrieve_user_ratings,
-    svd_matrix_decomposition,
-)
 from .models import CustomUser, Movies, Ratings
 from .serializes import MoviesSerializer
 
@@ -111,12 +112,8 @@ def login(request):
 
         return Response(
             {
-                "refresh_token": str(refresh),
-                "access_token": (
-                    str(refresh.access_token)
-                    if hasattr(refresh, "access_token")
-                    else ""
-                ),
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
                 "user": user_dict,
             },
             status=status.HTTP_200_OK,
@@ -156,23 +153,36 @@ movies = Movies.objects.all().values()
 movies_df = pd.DataFrame.from_records(movies)
 ratings = Ratings.objects.all().values("userid", "movieid", "rating", "timestamp")
 ratings_df = pd.DataFrame.from_records(ratings)
+merged_data = merge_data(ratings_df, movies_df, "movieid")
+ratings_matrix = create_ratings_matrix(merged_data, "userid", "movieid", "rating")
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_recommendations(request):
-    merged_data = merge_data(ratings_df, movies_df, "movieid")
-    ratings_matrix = create_ratings_matrix(merged_data, "userid", "movieid", "rating")
+    userId = int(request.GET.get("userId"))
     ratings_matrix_filled = fill_ratings_matrix(ratings_matrix)
     U, sigma, Vt = svd_matrix_decomposition(ratings_matrix_filled)
     res = recreate_ratings_matrix(ratings_matrix, U, sigma, Vt)
-    sparse_data = retrieve_user_ratings(1, ratings_matrix)
-    recommendations = retrieve_user_ratings(1, res)
-    print(recommendations)
-    combined_list = []
+    sorted_dict = dict(
+        sorted(
+            retrieve_user_ratings(userId, res).items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+    )
+    top_recommendations_keys = list(sorted_dict.keys())[:20]
 
-    for key in sparse_data:
-        if not np.isnan(sparse_data[key]):
-            combined_list.append(key)
+    top_recommendations = []
+    for key in top_recommendations_keys:
+        top_recommendations.append(get_item_details(movies_df, key))
 
-    return Response(combined_list, status=status.HTTP_200_OK)
+    return Response(top_recommendations, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def average_rating(request):
+    item_id = int(request.GET.get("itemId"))
+    average_rating = get_average_rating(ratings_matrix, item_id)
+    return Response(average_rating, status=status.HTTP_200_OK)

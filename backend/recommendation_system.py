@@ -118,3 +118,12 @@ def get_top_k_ratings(user_id, mat_dataframe, k):
     top_k_ratings = user_ratings.sort_values(ascending=False).head(k)
     top_k_movie_ids = top_k_ratings.index.tolist()
     return top_k_movie_ids
+
+
+def get_item_details(dataset, item_id):
+    keys = ['movie_id', 'title', 'genres']
+    arr = dataset.iloc[item_id].values
+    return dict(zip(keys, [int(arr[0]), arr[1], arr[2]]))
+
+def get_average_rating(ratings_matrix, item_id):
+    return ratings_matrix[item_id].mean()

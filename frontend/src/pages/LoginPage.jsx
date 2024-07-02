@@ -51,12 +51,12 @@ function LoginPage() {
         password: data["password"],
       });
 
-      const { access_token, refresh_token, user } = response.data;
-      localStorage.setItem("access_token", access_token);
-      localStorage.setItem("refresh_token", refresh_token);
+      const { access, refresh, user } = response.data;
+      localStorage.setItem("access", access);
+      localStorage.setItem("refresh", refresh);
 
       const userObject = {
-        userId: user.userId,
+        userId: user.id,
         email: user.email,
         username: user.username,
       };
@@ -64,7 +64,8 @@ function LoginPage() {
       dispatch(
         setLogin({
           user: userObject,
-          accessToken: access_token,
+          access: access,
+          refresh: refresh,
         })
       );
 

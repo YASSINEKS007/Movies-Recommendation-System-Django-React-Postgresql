@@ -1,5 +1,6 @@
 import { Grid, useMediaQuery } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import api from "../api";
 import MovieCard from "./MovieCard";
 
@@ -7,13 +8,17 @@ function MoviesGrid() {
   const backendHost = import.meta.env.VITE_BACKEND_HOST;
   const [movies, setMovies] = useState([]);
   const isNonMobileScreen = useMediaQuery("(min-width : 1000px)");
+  const userId = useSelector((state) => state.user.userId);
 
-  const fetchMovies = async () => {
+  const fetch_recommendations = async () => {
     try {
-      const response = await api.get(`${backendHost}/app/movies/`);
+      const response = await api.get(
+        `${backendHost}/app/recommendations/?userId=${encodeURIComponent(
+          userId
+        )}`
+      );
       const data = response.data;
-      console.log("Fetched movies data: ", data);
-      setMovies(data.slice(1, 10));
+      setMovies(data);
     } catch (error) {
       console.error(
         "Error fetching movies: ",
@@ -23,8 +28,8 @@ function MoviesGrid() {
   };
 
   useEffect(() => {
-    fetchMovies();
-  });
+    fetch_recommendations();
+  }, []);
 
   return (
     <Grid
@@ -39,6 +44,7 @@ function MoviesGrid() {
       {movies.map((movie, index) => (
         <MovieCard
           key={index}
+          itemId={movie.movie_id}
           title={movie.title}
           genres={movie.genres}
         />
