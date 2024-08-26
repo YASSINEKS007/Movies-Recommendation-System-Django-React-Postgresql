@@ -46,7 +46,7 @@ This project implements a movie recommendation system using collaborative filter
 1.  Clone the repository:
 
     ```sh
-    git clone https://github.com/yourusername/recommendation-system.git
+    git clone https://github.com/YASSINEKS007/Movies-Recommendation-System-Django-React-Postgresql.git
     cd recommendation-system/backend
     ```
 
